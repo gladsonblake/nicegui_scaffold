@@ -1,0 +1,236 @@
+---
+description: NiceGUI framework guidelines and documentation references for building web-based Python UIs
+globs: ["**/*.py"]
+---
+
+# NiceGUI Development Guidelines
+
+This project uses **NiceGUI** - a Python framework for building web-based user interfaces.
+
+## Documentation Reference
+
+When making changes to NiceGUI code, **always consult the official documentation** at https://nicegui.io/documentation
+
+### Map of NiceGUI - Section Links
+
+Use these specific documentation links when working with different UI categories:
+
+| Category                   | Documentation Link                                                | Description                                                          |
+| -------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Text Elements              | https://nicegui.io/documentation/section_text_elements            | `ui.label`, `ui.markdown`, `ui.html`, `ui.restructured_text`         |
+| Controls                   | https://nicegui.io/documentation/section_controls                 | `ui.button`, `ui.input`, `ui.slider`, `ui.select`, `ui.toggle`, etc. |
+| Audiovisual Elements       | https://nicegui.io/documentation/section_audiovisual_elements     | `ui.image`, `ui.audio`, `ui.video`, `ui.interactive_image`           |
+| Data Elements              | https://nicegui.io/documentation/section_data_elements            | `ui.table`, `ui.aggrid`, `ui.echart`, `ui.highchart`, `ui.plotly`    |
+| Binding Properties         | https://nicegui.io/documentation/section_binding_properties       | Data binding with `.bind_value()`, `.bind_text_from()`, etc.         |
+| Page Layout                | https://nicegui.io/documentation/section_page_layout              | `ui.row`, `ui.column`, `ui.card`, `ui.header`, `ui.footer`, drawers  |
+| Styling & Appearance       | https://nicegui.io/documentation/section_styling_appearance       | Tailwind CSS, Quasar props, custom CSS                               |
+| Action & Events            | https://nicegui.io/documentation/section_action_events            | Timers, events, lifecycle, storage                                   |
+| Pages & Routing            | https://nicegui.io/documentation/section_pages_routing            | `@ui.page`, navigation, FastAPI integration                          |
+| Configuration & Deployment | https://nicegui.io/documentation/section_configuration_deployment | `ui.run()` options, native mode, deployment                          |
+| Testing                    | https://nicegui.io/documentation/section_testing                  | Automated UI testing                                                 |
+
+## NiceGUI Namespace Map
+
+### Text Elements
+
+- `ui.label` - Simple text display
+- `ui.markdown` - Markdown-formatted text with extras support
+- `ui.html` - Raw HTML content
+- `ui.restructured_text` - reStructuredText content
+- `ui.code` - Syntax-highlighted code blocks
+
+### Controls
+
+- `ui.button` - Clickable button with optional icon
+- `ui.input` - Text input field
+- `ui.textarea` - Multi-line text input
+- `ui.number` - Numeric input with validation
+- `ui.slider` - Range slider control
+- `ui.select` - Dropdown selection (supports lists and dicts)
+- `ui.toggle` - Toggle button group
+- `ui.checkbox` - Boolean checkbox
+- `ui.switch` - Toggle switch
+- `ui.radio` - Radio button group
+- `ui.date` - Date picker
+- `ui.time` - Time picker
+- `ui.color_input` - Color picker
+- `ui.color_picker` - Advanced color picker
+- `ui.upload` - File upload component
+- `ui.input_chips` - Tag/chip input
+
+### Layout Elements
+
+- `ui.row` - Horizontal flex container
+- `ui.column` - Vertical flex container
+- `ui.card` - Material design card container
+- `ui.header` - Page header (fixed or scrolling)
+- `ui.footer` - Page footer
+- `ui.left_drawer` - Left navigation drawer
+- `ui.right_drawer` - Right navigation drawer
+- `ui.grid` - CSS grid layout
+- `ui.expansion` - Collapsible panel
+- `ui.tabs` / `ui.tab` / `ui.tab_panels` - Tabbed interface
+- `ui.splitter` - Resizable split panes
+- `ui.scroll_area` - Scrollable container
+- `ui.separator` - Visual divider
+
+### Data Elements
+
+- `ui.table` - Data table with sorting/filtering
+- `ui.aggrid` - AG Grid integration
+- `ui.echart` - Apache ECharts visualization
+- `ui.highchart` - Highcharts visualization
+- `ui.plotly` - Plotly charts
+- `ui.pyplot` - Matplotlib integration
+- `ui.line_plot` / `ui.linear_progress` - Simple visualizations
+- `ui.log` - Log output display
+- `ui.tree` - Tree view component
+- `ui.json_editor` - JSON editing component
+
+### Media Elements
+
+- `ui.image` - Static image display
+- `ui.interactive_image` - Clickable image with events
+- `ui.audio` - Audio player
+- `ui.video` - Video player
+- `ui.scene` - 3D scene (Three.js)
+- `ui.scene_view` - Additional 3D view
+
+### Feedback & Overlays
+
+- `ui.notify` - Toast notifications
+- `ui.dialog` - Modal dialog
+- `ui.menu` - Dropdown menu
+- `ui.context_menu` - Right-click context menu
+- `ui.tooltip` - Hover tooltip
+
+### Decorators & Functions
+
+- `@ui.page('/path')` - Define a page route
+- `@ui.refreshable` - Create refreshable UI sections
+- `ui.run()` - Start the application
+- `ui.navigate.to()` - Programmatic navigation
+- `ui.download()` - Trigger file download
+
+### App-Level Features
+
+- `app.storage.user` - Per-user persistent storage
+- `app.storage.client` - Per-client session storage
+- `app.storage.general` - Global app storage
+- `app.timer` - Global background timer
+- `app.on_startup` / `app.on_shutdown` - Lifecycle hooks
+
+## Code Patterns
+
+### Context Manager Pattern
+
+NiceGUI uses context managers for element nesting:
+
+```python
+with ui.card().classes('p-4'):
+    with ui.row():
+        ui.label('Hello')
+        ui.button('Click me', on_click=handler)
+```
+
+### Data Binding
+
+Bind UI elements to data models:
+
+```python
+# Two-way binding
+slider = ui.slider(min=0, max=100, value=50)
+ui.number().bind_value(slider, 'value')
+
+# One-way binding (from source)
+ui.label().bind_text_from(slider, 'value', lambda v: f'Value: {v}')
+
+# Visibility binding
+ui.label('Hidden when off').bind_visibility_from(switch, 'value')
+```
+
+### Styling Methods
+
+Chain styling methods for element customization:
+
+```python
+ui.button('Styled') \
+    .classes('bg-blue-500 text-white')  # Tailwind CSS
+    .props('flat rounded')               # Quasar props
+    .style('font-size: 18px')            # Inline CSS
+```
+
+### Styling Philosophy
+
+**Use minimal styling** - prefer default component styles when possible:
+
+- **Default styles first**: Only add custom styling when necessary for functionality, accessibility, or specific design requirements
+- **Prefer Tailwind utilities**: Use Tailwind CSS utility classes via `.classes()` over custom CSS
+- **Dark mode support**: Use Tailwind's `dark:` prefix classes for theme-aware styling (e.g., `bg-gray-50 dark:bg-gray-800`)
+- **Avoid over-styling**: Let NiceGUI's default Quasar component styles handle most visual presentation
+- **Accessibility over aesthetics**: Prioritize functional styling that improves usability
+
+Example of minimal, theme-aware styling:
+
+```python
+# Minimal styling with dark mode support
+ui.card().classes('p-4 bg-white dark:bg-gray-800')
+ui.label('Text').classes('text-gray-900 dark:text-gray-100')
+```
+
+### Event Handling
+
+Handle user interactions:
+
+```python
+# Simple callback
+ui.button('Click', on_click=lambda: ui.notify('Clicked!'))
+
+# With event arguments
+ui.input(on_change=lambda e: print(e.value))
+
+# Generic event subscription
+element.on('mouseover', handler)
+```
+
+### Page Routing
+
+Define multiple pages:
+
+```python
+@ui.page('/')
+def home():
+    ui.label('Home Page')
+    ui.link('Go to About', '/about')
+
+@ui.page('/about')
+def about():
+    ui.label('About Page')
+
+ui.run()
+```
+
+### Refreshable UI
+
+Create dynamically updatable sections:
+
+```python
+@ui.refreshable
+def user_list():
+    for user in users:
+        ui.label(user.name)
+
+user_list()
+ui.button('Refresh', on_click=user_list.refresh)
+```
+
+## Best Practices
+
+1. **Use context managers** for proper element hierarchy
+2. **Prefer Tailwind CSS** via `.classes()` for styling
+3. **Use data binding** instead of manual updates when possible
+4. **Keep page functions focused** - extract complex UI into `@ui.refreshable` functions
+5. **Use `ui.notify()`** for user feedback instead of alerts
+6. **Store user state** in `app.storage.user` for persistence
+7. **Use `@ui.page`** decorator for multi-page apps
+8. **Reference documentation** when using unfamiliar components

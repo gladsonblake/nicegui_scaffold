@@ -1,0 +1,186 @@
+---
+description: Python best practices and project conventions for NiceGUI development
+globs: ["**/*.py", "pyproject.toml"]
+---
+
+# Python Development Guidelines
+
+## Package Management
+
+**Always use `uv` as the Python package manager** for this project.
+
+```bash
+# Add dependencies
+uv add package-name
+
+# Add dev dependencies
+uv add --dev package-name
+
+# Sync dependencies
+uv sync
+
+# Run scripts
+uv run python main.py
+```
+
+## Code Style
+
+### Type Hints
+Use type hints for function signatures and class attributes:
+
+```python
+from typing import Optional, Callable
+from nicegui import ui
+
+def create_button(
+    label: str,
+    on_click: Optional[Callable[[], None]] = None,
+    disabled: bool = False
+) -> ui.button:
+    return ui.button(label, on_click=on_click).props('disabled' if disabled else '')
+```
+
+### Import Organization
+Organize imports in this order:
+1. Standard library imports
+2. Third-party imports
+3. Local application imports
+
+```python
+# Standard library
+from datetime import datetime
+from typing import Optional
+
+# Third-party
+from nicegui import app, ui
+
+# Local
+from .components import sidebar
+from .models import User
+```
+
+### Docstrings
+Use docstrings for modules, classes, and functions:
+
+```python
+def create_user_card(user: User) -> None:
+    """Create a card displaying user information.
+    
+    Args:
+        user: The user object containing profile data.
+    """
+    with ui.card():
+        ui.label(user.name)
+```
+
+## Async Patterns
+
+Use async/await when needed for non-blocking operations:
+
+```python
+import asyncio
+from nicegui import ui
+
+async def fetch_data():
+    """Fetch data asynchronously."""
+    await asyncio.sleep(1)  # Simulate API call
+    return {'status': 'success'}
+
+@ui.page('/')
+async def index():
+    data = await fetch_data()
+    ui.label(f'Status: {data["status"]}')
+```
+
+## Project Structure
+
+Recommended structure for larger NiceGUI applications:
+
+```
+project/
+├── .cursor/
+│   └── rules/
+├── src/
+│   ├── __init__.py
+│   ├── main.py           # Entry point with ui.run()
+│   ├── pages/            # Page definitions
+│   │   ├── __init__.py
+│   │   ├── home.py
+│   │   └── settings.py
+│   ├── components/       # Reusable UI components
+│   │   ├── __init__.py
+│   │   ├── navbar.py
+│   │   └── sidebar.py
+│   ├── models/           # Data models
+│   │   └── __init__.py
+│   └── utils/            # Utility functions
+│       └── __init__.py
+├── static/               # Static assets
+├── pyproject.toml
+└── README.md
+```
+
+## Error Handling
+
+Handle errors gracefully with user feedback:
+
+```python
+from nicegui import ui
+
+async def save_data(data: dict) -> None:
+    try:
+        # Perform save operation
+        await perform_save(data)
+        ui.notify('Data saved successfully', type='positive')
+    except ValueError as e:
+        ui.notify(f'Validation error: {e}', type='negative')
+    except Exception as e:
+        ui.notify('An unexpected error occurred', type='negative')
+        # Log the error for debugging
+        print(f'Error: {e}')
+```
+
+## Configuration
+
+Use environment variables or config files for settings:
+
+```python
+import os
+from nicegui import ui
+
+# Environment-based configuration
+DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
+HOST = os.getenv('HOST', '0.0.0.0')
+PORT = int(os.getenv('PORT', '8080'))
+
+ui.run(
+    host=HOST,
+    port=PORT,
+    reload=DEBUG,
+    title='My NiceGUI App'
+)
+```
+
+## Testing
+
+Write tests for your NiceGUI components:
+
+```python
+from nicegui.testing import User
+
+async def test_button_click(user: User) -> None:
+    """Test that button click triggers expected behavior."""
+    # See: https://nicegui.io/documentation/section_testing
+    pass
+```
+
+## Best Practices
+
+1. **Keep functions small** - Single responsibility principle
+2. **Use dataclasses** for structured data
+3. **Avoid global state** - Use `app.storage` instead
+4. **Handle exceptions** at appropriate levels
+5. **Use constants** for magic strings/numbers
+6. **Write self-documenting code** with clear variable names
+7. **Use f-strings** for string formatting
+8. **Prefer composition** over inheritance for UI components
