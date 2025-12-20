@@ -139,6 +139,28 @@ class PageLayout:
         for label, path, icon in nav_items:
             PageLayout._nav_item(icon, label, path, collapsed)
 
+        # Dark mode toggle at the bottom
+        ui.separator().classes("my-2")
+        # Get dark mode value from storage, default to True
+        dark_mode_value = app.storage.user.get("dark_mode", True)
+        dark = ui.dark_mode(value=dark_mode_value)
+
+        # Callback to save dark mode value to storage
+        def save_dark_mode(e):
+            app.storage.user["dark_mode"] = e.value
+
+        if collapsed:
+            # Centered icon-only toggle when collapsed
+            with ui.row().classes("justify-center items-center py-2 w-full"):
+                dark_switch = ui.switch(value=dark.value).bind_value(dark).props("dense")
+                dark_switch.on_value_change(save_dark_mode)
+        else:
+            # Full switch with label when expanded
+            with ui.row().classes("items-center gap-3 px-3 py-2 w-full"):
+                ui.icon("dark_mode").classes("text-primary text-xl")
+                dark_switch = ui.switch("Dark mode", value=dark.value).bind_value(dark)
+                dark_switch.on_value_change(save_dark_mode)
+
     def _setup_layout(self) -> None:
         """Set up the page layout components."""
         ui.colors(
@@ -190,21 +212,21 @@ class PageLayout:
             with self.header:
                 with ui.row().classes("items-center gap-4 flex-1"):
                     # Add drawer toggle buttons if drawers are present
-                    if self.left_drawer:
-                        ui.button(
-                            icon="menu",
-                            on_click=lambda: self.left_drawer.toggle(),
-                        ).props("flat color=white")
+                    # if self.left_drawer:
+                    #     ui.button(
+                    #         icon="menu",
+                    #         on_click=lambda: self.left_drawer.toggle(),
+                    #     ).props("flat color=white")
 
                     # Render header content
                     self.header_content()
 
                 # Add right drawer toggle button if present
-                if self.right_drawer:
-                    ui.button(
-                        icon="menu",
-                        on_click=lambda: self.right_drawer.toggle(),
-                    ).props("flat color=white")
+                # if self.right_drawer:
+                #     ui.button(
+                #         icon="menu",
+                #         on_click=lambda: self.right_drawer.toggle(),
+                #     ).props("flat color=white")
 
         # Create footer if content is provided
         if self.footer_content:
