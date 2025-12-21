@@ -12,17 +12,16 @@ from nicegui import app, ui
 class PageLayout:
     """A reusable page layout decorator with optional header, footer, and drawers.
 
-    This component provides a consistent layout structure for NiceGUI pages with
-    modern styling and flexible configuration options.
+    Uses Quasar-style layout with drawers that auto-show on desktop and
+    toggle buttons in the header.
 
     Example:
         ```python
         @PageLayout(
             header_content=lambda: ui.label("My App"),
-            footer_content=lambda: ui.label("Footer"),
             left_drawer_content=PageLayout.render_navigation,
         )
-        def my_page():
+        def my_page(layout):
             ui.label("Page content here")
         ```
     """
@@ -43,29 +42,8 @@ class PageLayout:
         warning_color: str = "#f2c037",
         dark_color: str = "#1d1d1d",
         dark_page_color: str = "#121212",
-        left_drawer_fixed: bool = True,
-        right_drawer_fixed: bool = True,
     ):
-        """Initialize the page layout.
-
-        Args:
-            header_content: Optional function to render header content.
-            footer_content: Optional function to render footer content.
-            left_drawer_content: Optional function to render left drawer content.
-            right_drawer_content: Optional function to render right drawer content.
-            header_elevated: Whether the header should have elevation/shadow.
-            primary_color: Primary theme color.
-            secondary_color: Secondary theme color.
-            accent_color: Accent theme color.
-            positive_color: Positive/success theme color.
-            negative_color: Negative/error theme color.
-            info_color: Info theme color.
-            warning_color: Warning theme color.
-            dark_color: Dark theme color.
-            dark_page_color: Dark page background color.
-            left_drawer_fixed: Whether the left drawer is fixed or scrolls with content.
-            right_drawer_fixed: Whether the right drawer is fixed or scrolls with content.
-        """
+        """Initialize the page layout."""
         self.header_content = header_content
         self.footer_content = footer_content
         self.left_drawer_content = left_drawer_content
@@ -80,86 +58,49 @@ class PageLayout:
         self.warning_color = warning_color
         self.dark_color = dark_color
         self.dark_page_color = dark_page_color
-        self.left_drawer_fixed = left_drawer_fixed
-        self.right_drawer_fixed = right_drawer_fixed
 
-        self.left_drawer = None
-        self.right_drawer = None
-        self.header = None
+        self.left_drawer: Optional[ui.left_drawer] = None
+        self.right_drawer: Optional[ui.right_drawer] = None
 
     @staticmethod
-    def _nav_item(icon: str, label: str, path: str, collapsed: bool) -> None:
+    def _nav_item(icon: str, label: str, path: str) -> None:
         """Render a single navigation item."""
         with ui.link(target=path).classes("w-full no-underline"):
-            if collapsed:
-                # Centered icon-only for collapsed state
-                with ui.row().classes(
-                    "justify-center items-center py-2 rounded-lg w-full hover:bg-primary/10 transition-colors cursor-pointer"
-                ):
-                    ui.icon(icon).classes("text-primary text-xl")
-            else:
-                # Icon + label for expanded state
-                with ui.row().classes(
-                    "items-center gap-3 px-3 py-2 rounded-lg w-full hover:bg-primary/10 transition-colors cursor-pointer"
-                ):
-                    ui.icon(icon).classes("text-primary text-xl")
-                    ui.label(label).classes("text-gray-700 dark:text-gray-300")
+            with ui.row(align_items="center").classes(
+                "gap-3 px-4 py-3 w-full rounded-lg "
+                "hover:bg-gray-100 dark:hover:bg-gray-700 "
+                "hover:shadow-sm cursor-pointer group "
+                "justify-center"
+            ):
+                ui.icon(icon).classes("text-gray-600 dark:text-gray-400 group-hover:text-primary").props("size=sm")
+                ui.label(label).classes("text-gray-700 dark:text-gray-300 font-medium group-hover:text-primary")
 
     @staticmethod
-    def render_navigation(drawer: Optional["ui.left_drawer"] = None) -> None:
-        """Render navigation menu in left drawer with collapsible support."""
-        # Get collapsed state from storage, default to False (expanded)
-        collapsed = app.storage.user.get("sidebar_collapsed", False)
-
-        # Toggle button callback
-        def toggle_sidebar():
-            new_state = not app.storage.user.get("sidebar_collapsed", False)
-            app.storage.user["sidebar_collapsed"] = new_state
-            ui.navigate.reload()
-
-        # Toggle button - centered when collapsed, right-aligned when expanded
-        toggle_icon = "chevron_right" if collapsed else "chevron_left"
-        justify_class = "justify-center" if collapsed else "justify-end"
-        with ui.row().classes(f"w-full {justify_class} px-1 pb-2"):
-            ui.button(
-                icon=toggle_icon,
-                on_click=toggle_sidebar,
-            ).props("flat round dense").classes("text-gray-500 hover:text-primary")
-
+    def render_navigation() -> None:
+        """Render navigation menu in left drawer."""
         nav_items = [
             ("Home", "/", "home"),
             ("Drawers", "/drawers-only", "menu"),
         ]
 
-        # Navigation header (only show when expanded)
-        if not collapsed:
-            ui.label("Navigation").classes("text-sm font-semibold text-gray-500 dark:text-gray-400 px-3 pb-1")
+        ui.label("Navigation").classes("text-lg font-bold mb-4")
 
-        # Navigation items
+        ui.separator()
+
         for label, path, icon in nav_items:
-            PageLayout._nav_item(icon, label, path, collapsed)
+            PageLayout._nav_item(icon, label, path)
 
-        # Dark mode toggle at the bottom
-        ui.separator().classes("my-2")
-        # Get dark mode value from storage, default to True
-        dark_mode_value = app.storage.user.get("dark_mode", True)
-        dark = ui.dark_mode(value=dark_mode_value)
+        # Dark mode toggle at bottom
+        with ui.column().classes("mt-auto w-full"):
+            ui.separator().classes("my-2")
+            dark_mode_value = app.storage.user.get("dark_mode", True)
+            dark = ui.dark_mode(value=dark_mode_value)
 
-        # Callback to save dark mode value to storage
-        def save_dark_mode(e):
-            app.storage.user["dark_mode"] = e.value
+            def save_dark_mode(e):
+                app.storage.user["dark_mode"] = e.value
 
-        if collapsed:
-            # Centered icon-only toggle when collapsed
-            with ui.row().classes("justify-center items-center py-2 w-full"):
-                dark_switch = ui.switch(value=dark.value).bind_value(dark).props("dense")
-                dark_switch.on_value_change(save_dark_mode)
-        else:
-            # Full switch with label when expanded
             with ui.row().classes("items-center gap-3 px-3 py-2 w-full"):
-                ui.icon("dark_mode").classes("text-primary text-xl")
-                dark_switch = ui.switch("Dark mode", value=dark.value).bind_value(dark)
-                dark_switch.on_value_change(save_dark_mode)
+                ui.switch("Dark mode", value=dark.value).bind_value(dark).on_value_change(save_dark_mode)
 
     def _setup_layout(self) -> None:
         """Set up the page layout components."""
@@ -175,58 +116,36 @@ class PageLayout:
             warning=self.warning_color,
         )
 
-        # Create left drawer if content is provided
+        # Create drawers with value=None for Quasar's show-if-above behavior
         if self.left_drawer_content:
-            # Get collapsed state from storage for dynamic width
-            collapsed = app.storage.user.get("sidebar_collapsed", False)
-            drawer_width = 56 if collapsed else 200
-
-            self.left_drawer = ui.left_drawer(
-                fixed=self.left_drawer_fixed,
-                top_corner=True,
-                bottom_corner=True,
-            ).props(f"bordered width={drawer_width}")
-
+            self.left_drawer = ui.left_drawer(value=None, top_corner=True, bottom_corner=True).props(
+                "bordered width=200"
+            )
             with self.left_drawer:
-                with ui.column().classes("gap-1 w-full h-full pt-2"):
+                with ui.column().classes("flex flex-col h-full gap-1 w-full pt-4"):
                     self.left_drawer_content()
 
-        # Create right drawer if content is provided
         if self.right_drawer_content:
-            self.right_drawer = ui.right_drawer(
-                fixed=self.right_drawer_fixed,
-                top_corner=True,
-                bottom_corner=True,
-            ).props("bordered width=200")
-
+            self.right_drawer = ui.right_drawer(value=None, top_corner=True, bottom_corner=True).props(
+                "bordered width=200"
+            )
             with self.right_drawer:
                 with ui.column().classes("p-4 gap-2 w-full"):
                     self.right_drawer_content()
 
-        # Create header if content is provided
-        if self.header_content:
-            self.header = ui.header(
-                elevated=self.header_elevated,
-            ).classes("bg-primary text-white items-center justify-between px-4 py-2")
+        # Create header with toggle buttons
+        with ui.header(elevated=self.header_elevated).classes("items-center justify-between"):
+            # Left toggle button
+            if self.left_drawer:
+                ui.button(icon="menu", on_click=self.left_drawer.toggle).props("flat dense round color=white")
 
-            with self.header:
-                with ui.row().classes("items-center gap-4 flex-1"):
-                    # Add drawer toggle buttons if drawers are present
-                    # if self.left_drawer:
-                    #     ui.button(
-                    #         icon="menu",
-                    #         on_click=lambda: self.left_drawer.toggle(),
-                    #     ).props("flat color=white")
+            # Header content
+            if self.header_content:
+                self.header_content()
 
-                    # Render header content
-                    self.header_content()
-
-                # Add right drawer toggle button if present
-                # if self.right_drawer:
-                #     ui.button(
-                #         icon="menu",
-                #         on_click=lambda: self.right_drawer.toggle(),
-                #     ).props("flat color=white")
+            # Right toggle button
+            if self.right_drawer:
+                ui.button(icon="menu", on_click=self.right_drawer.toggle).props("flat dense round color=white")
 
         # Create footer if content is provided
         if self.footer_content:
@@ -235,21 +154,12 @@ class PageLayout:
                     self.footer_content()
 
     def __call__(self, func: Callable) -> Callable:
-        """Decorate a page function with this layout.
-
-        Args:
-            func: The page function to wrap with the layout.
-
-        Returns:
-            The wrapped function that renders the layout and page content.
-        """
+        """Decorate a page function with this layout."""
 
         @wraps(func)
         def wrapper(*args, **kwargs):
             self._setup_layout()
             return func(self, *args, **kwargs)
 
-        # Expose drawer references on the wrapper for external access
         wrapper.layout = self
-
         return wrapper

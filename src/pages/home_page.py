@@ -1,15 +1,12 @@
-from components import PageLayout
-
 from nicegui import ui
 
-from .shared import _render_settings
+from components import PageLayout
 
 
 @PageLayout(
     header_content=lambda: ui.label("NiceGUI Scaffold").classes("text-xl font-bold"),
     # footer_content=lambda: ui.label("© 2024 My App. All rights reserved.").classes("text-sm"),
     left_drawer_content=PageLayout.render_navigation,
-    right_drawer_content=_render_settings,
 )
 def home(layout: PageLayout):
     """Home page with full layout example."""

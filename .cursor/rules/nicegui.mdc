@@ -1,6 +1,6 @@
 ---
-description: NiceGUI framework guidelines and documentation references for building web-based Python UIs
-globs: ["**/*.py"]
+globs: *.py
+alwaysApply: false
 ---
 
 # NiceGUI Development Guidelines
@@ -15,19 +15,17 @@ When making changes to NiceGUI code, **always consult the official documentation
 
 Use these specific documentation links when working with different UI categories:
 
-| Category                   | Documentation Link                                                | Description                                                          |
-| -------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------- |
-| Text Elements              | https://nicegui.io/documentation/section_text_elements            | `ui.label`, `ui.markdown`, `ui.html`, `ui.restructured_text`         |
-| Controls                   | https://nicegui.io/documentation/section_controls                 | `ui.button`, `ui.input`, `ui.slider`, `ui.select`, `ui.toggle`, etc. |
-| Audiovisual Elements       | https://nicegui.io/documentation/section_audiovisual_elements     | `ui.image`, `ui.audio`, `ui.video`, `ui.interactive_image`           |
-| Data Elements              | https://nicegui.io/documentation/section_data_elements            | `ui.table`, `ui.aggrid`, `ui.echart`, `ui.highchart`, `ui.plotly`    |
-| Binding Properties         | https://nicegui.io/documentation/section_binding_properties       | Data binding with `.bind_value()`, `.bind_text_from()`, etc.         |
-| Page Layout                | https://nicegui.io/documentation/section_page_layout              | `ui.row`, `ui.column`, `ui.card`, `ui.header`, `ui.footer`, drawers  |
-| Styling & Appearance       | https://nicegui.io/documentation/section_styling_appearance       | Tailwind CSS, Quasar props, custom CSS                               |
-| Action & Events            | https://nicegui.io/documentation/section_action_events            | Timers, events, lifecycle, storage                                   |
-| Pages & Routing            | https://nicegui.io/documentation/section_pages_routing            | `@ui.page`, navigation, FastAPI integration                          |
-| Configuration & Deployment | https://nicegui.io/documentation/section_configuration_deployment | `ui.run()` options, native mode, deployment                          |
-| Testing                    | https://nicegui.io/documentation/section_testing                  | Automated UI testing                                                 |
+- **Text Elements** - https://nicegui.io/documentation/section_text_elements - `ui.label`, `ui.markdown`, `ui.html`, `ui.restructured_text`
+- **Controls** - https://nicegui.io/documentation/section_controls - `ui.button`, `ui.input`, `ui.slider`, `ui.select`, `ui.toggle`, etc.
+- **Audiovisual Elements** - https://nicegui.io/documentation/section_audiovisual_elements - `ui.image`, `ui.audio`, `ui.video`, `ui.interactive_image`
+- **Data Elements** - https://nicegui.io/documentation/section_data_elements - `ui.table`, `ui.aggrid`, `ui.echart`, `ui.highchart`, `ui.plotly`
+- **Binding Properties** - https://nicegui.io/documentation/section_binding_properties - Data binding with `.bind_value()`, `.bind_text_from()`, etc.
+- **Page Layout** - https://nicegui.io/documentation/section_page_layout - `ui.row`, `ui.column`, `ui.card`, `ui.header`, `ui.footer`, drawers
+- **Styling & Appearance** - https://nicegui.io/documentation/section_styling_appearance - Tailwind CSS, Quasar props, custom CSS
+- **Action & Events** - https://nicegui.io/documentation/section_action_events - Timers, events, lifecycle, storage
+- **Pages & Routing** - https://nicegui.io/documentation/section_pages_routing - `@ui.page`, navigation, FastAPI integration
+- **Configuration & Deployment** - https://nicegui.io/documentation/section_configuration_deployment - `ui.run()` options, native mode, deployment
+- **Testing** - https://nicegui.io/documentation/section_testing - Automated UI testing
 
 ## NiceGUI Namespace Map
 

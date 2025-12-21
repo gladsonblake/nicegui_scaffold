@@ -1,6 +1,6 @@
 ---
-description: Python best practices and project conventions for NiceGUI development
-globs: ["**/*.py", "pyproject.toml"]
+globs: *.py
+alwaysApply: false
 ---
 
 # Python Development Guidelines
@@ -26,6 +26,7 @@ uv run python main.py
 ## Code Style
 
 ### Type Hints
+
 Use type hints for function signatures and class attributes:
 
 ```python
@@ -41,7 +42,9 @@ def create_button(
 ```
 
 ### Import Organization
+
 Organize imports in this order:
+
 1. Standard library imports
 2. Third-party imports
 3. Local application imports
@@ -60,12 +63,13 @@ from .models import User
 ```
 
 ### Docstrings
+
 Use docstrings for modules, classes, and functions:
 
 ```python
 def create_user_card(user: User) -> None:
     """Create a card displaying user information.
-    
+
     Args:
         user: The user object containing profile data.
     """
