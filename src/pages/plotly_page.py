@@ -57,61 +57,58 @@ def _plotly_page(layout: PageLayout):
         """Update the bar chart with new data."""
         plot2.update_figure(create_target_figure(x_values, y_values))
 
-    # Page content
-    with ui.column().classes("p-6 gap-4 w-full max-w-6xl mx-auto"):
-        ui.label("Plotly Chart Interaction").classes("text-3xl font-bold mb-4")
-        ui.label("Select points in the scatter plot below to update the bar chart.").classes("text-gray-600 mb-2")
-        # Source chart - scatter plot
-        plot1 = ui.plotly(create_source_figure()).classes("w-full h-64")
+    # Event handlers
+    def handle_selection(event):
+        """Update the bar chart based on selected points."""
+        if event.args:
+            event_str = json.dumps(event.args, indent=2)
+            ui.run_javascript(f"console.log({event_str})")
 
-        # Target chart - bar chart
-        plot2 = ui.plotly(create_target_figure([], [])).classes("w-full h-64")
+        if event.args and "points" in event.args:
+            points = event.args["points"]
+            if points:
+                x_values = [p.get("x") for p in points]
+                y_values = [p.get("y") for p in points]
+                update_bar_chart(x_values, y_values)
+                ui.notify(f"Updated chart with {len(points)} selected point(s)")
+                return
 
-        # Theme change handler
-        def update_chart_themes(_=None):
-            """Update both charts with current theme."""
-            plot1.update_figure(create_source_figure())
-            # Preserve existing bar chart data
-            current_fig = plot2.figure
-            if current_fig and len(current_fig.data) > 0:
-                trace = current_fig.data[0]
-                x_data = list(trace.x) if trace.x is not None else []
-                y_data = list(trace.y) if trace.y is not None else []
-                update_bar_chart(x_data, y_data)
-            else:
-                update_bar_chart([], [])
+        # Clear chart if no valid selection
+        update_bar_chart([], [])
 
-        layout.on_dark_mode_change(update_chart_themes)
+    def handle_click(event):
+        """Update the bar chart based on a single clicked point."""
+        if event.args and "points" in event.args:
+            points = event.args["points"]
+            if points:
+                point = points[0]
+                x_value = point.get("x")
+                y_value = point.get("y")
+                update_bar_chart([x_value], [y_value])
+                ui.notify(f"Selected: {x_value} - Sales: {y_value}")
 
-        # Event handlers
-        def handle_selection(event):
-            """Update the bar chart based on selected points."""
-            if event.args:
-                event_str = json.dumps(event.args, indent=2)
-                ui.run_javascript(f"console.log({event_str})")
-
-            if event.args and "points" in event.args:
-                points = event.args["points"]
-                if points:
-                    x_values = [p.get("x") for p in points]
-                    y_values = [p.get("y") for p in points]
-                    update_bar_chart(x_values, y_values)
-                    ui.notify(f"Updated chart with {len(points)} selected point(s)")
-                    return
-
-            # Clear chart if no valid selection
+    # Theme change handler
+    def update_chart_themes(_=None):
+        """Update both charts with current theme."""
+        plot1.update_figure(create_source_figure())
+        # Preserve existing bar chart data
+        current_fig = plot2.figure
+        if current_fig and len(current_fig.data) > 0:
+            trace = current_fig.data[0]
+            x_data = list(trace.x) if trace.x is not None else []
+            y_data = list(trace.y) if trace.y is not None else []
+            update_bar_chart(x_data, y_data)
+        else:
             update_bar_chart([], [])
 
-        def handle_click(event):
-            """Update the bar chart based on a single clicked point."""
-            if event.args and "points" in event.args:
-                points = event.args["points"]
-                if points:
-                    point = points[0]
-                    x_value = point.get("x")
-                    y_value = point.get("y")
-                    update_bar_chart([x_value], [y_value])
-                    ui.notify(f"Selected: {x_value} - Sales: {y_value}")
+    # Page content
+    with ui.grid(columns=2):
+        with ui.column().classes("p-6 gap-4"):
+            plot1 = ui.plotly(create_source_figure()).classes("w-full")
+            plot1.on("plotly_selected", handle_selection)
+            plot1.on("plotly_click", handle_click)
 
-        plot1.on("plotly_selected", handle_selection)
-        plot1.on("plotly_click", handle_click)
+        with ui.column().classes("p-6 gap-4"):
+            plot2 = ui.plotly(create_target_figure([], [])).classes("w-full")
+
+            layout.on_dark_mode_change(update_chart_themes)
