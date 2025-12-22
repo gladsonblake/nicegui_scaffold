@@ -27,7 +27,6 @@ def _plotly_page(layout: PageLayout):
     # Generate reproducible fake data
     random.seed(42)
     sales_data = [random.randint(20, 100) for _ in range(12)]
-    max_sales = max(sales_data) + 10
 
     def _get_selected_indices() -> list[int]:
         return list(app.storage.client.get("plotly_selected_indices", []))
@@ -61,7 +60,6 @@ def _plotly_page(layout: PageLayout):
             title=TARGET_CHART_TITLE,
             xaxis_title="Month",
             yaxis_title="Sales",
-            yaxis_range=[0, max_sales],
         )
 
     def update_bar_chart(x_values: list, y_values: list) -> None:
@@ -119,16 +117,16 @@ def _plotly_page(layout: PageLayout):
 
     @ui.refreshable
     def source_chart() -> None:
-        plot1 = ui.plotly(create_source_figure()).classes("w-full")
+        plot1 = ui.plotly(create_source_figure())
         plot1.on("plotly_selected", handle_selection)
         plot1.on("plotly_click", handle_click)
 
     # Page content
     with ui.grid(columns=2):
-        with ui.column().classes("p-6 gap-4"):
+        with ui.column():
             source_chart()
 
-        with ui.column().classes("p-6 gap-4"):
-            plot2 = ui.plotly(create_target_figure([], [])).classes("w-full")
+        with ui.column():
+            plot2 = ui.plotly(create_target_figure([], []))
 
             layout.on_dark_mode_change(update_chart_themes)
