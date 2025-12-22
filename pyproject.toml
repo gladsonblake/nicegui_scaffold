@@ -6,4 +6,5 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "nicegui>=3.4.1",
+    "plotly>=6.5.0",
 ]

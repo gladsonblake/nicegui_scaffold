@@ -6,7 +6,7 @@ from components import PageLayout
 @PageLayout(
     header_content=lambda: ui.label("NiceGUI Scaffold").classes("text-xl font-bold"),
     # footer_content=lambda: ui.label("© 2024 My App. All rights reserved.").classes("text-sm"),
-    left_drawer_content=PageLayout.render_navigation,
+    left_drawer_content=lambda layout: layout.render_navigation(),
 )
 def home(layout: PageLayout):
     """Home page with full layout example."""

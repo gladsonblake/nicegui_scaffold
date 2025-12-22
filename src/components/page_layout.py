@@ -9,6 +9,61 @@ from typing import Callable, Optional
 from nicegui import app, ui
 
 
+class ThemeManager:
+    """Per-client theme management using NiceGUI storage.
+
+    Manages dark mode state without global variables, using app.storage.user
+    for persistence across sessions.
+    """
+
+    # Default navigation items (label, path, icon)
+    DEFAULT_NAV_ITEMS: list[tuple[str, str, str]] = [
+        ("Home", "/", "home"),
+        ("Drawers", "/drawers-only", "menu"),
+        ("Plotly", "/plotly", "bar_chart"),
+    ]
+
+    def __init__(self):
+        """Initialize theme manager with per-client callback storage."""
+        # Use client storage for callbacks to avoid shared state
+        if "theme_callbacks" not in app.storage.client:
+            app.storage.client["theme_callbacks"] = []
+        self._dark_mode_element: Optional[ui.dark_mode] = None
+
+    @staticmethod
+    def get_dark_mode() -> bool:
+        """Get current dark mode setting."""
+        return app.storage.user.get("dark_mode", True)
+
+    @staticmethod
+    def set_dark_mode(value: bool) -> None:
+        """Set dark mode value and persist to storage."""
+        app.storage.user["dark_mode"] = value
+
+    def setup_dark_mode(self) -> ui.dark_mode:
+        """Create and return dark mode UI element bound to storage."""
+        if self._dark_mode_element is None:
+            self._dark_mode_element = ui.dark_mode(value=self.get_dark_mode())
+        return self._dark_mode_element
+
+    def on_dark_mode_change(self, callback: Callable[[bool], None]) -> None:
+        """Register callback for dark mode changes.
+
+        Callbacks are stored per-client to avoid shared state issues.
+        """
+        callbacks = app.storage.client.get("theme_callbacks", [])
+        callbacks.append(callback)
+        app.storage.client["theme_callbacks"] = callbacks
+        # Immediately call with current value
+        callback(self.get_dark_mode())
+
+    def _notify_callbacks(self, value: bool) -> None:
+        """Notify all registered callbacks of dark mode change."""
+        callbacks = app.storage.client.get("theme_callbacks", [])
+        for cb in callbacks:
+            cb(value)
+
+
 class PageLayout:
     """A reusable page layout decorator with optional header, footer, and drawers.
 
@@ -19,7 +74,7 @@ class PageLayout:
         ```python
         @PageLayout(
             header_content=lambda: ui.label("My App"),
-            left_drawer_content=PageLayout.render_navigation,
+            left_drawer_content=lambda layout: layout.render_navigation(),
         )
         def my_page(layout):
             ui.label("Page content here")
@@ -30,9 +85,10 @@ class PageLayout:
         self,
         header_content: Optional[Callable[[], None]] = None,
         footer_content: Optional[Callable[[], None]] = None,
-        left_drawer_content: Optional[Callable[[], None]] = None,
+        left_drawer_content: Optional[Callable[["PageLayout"], None]] = None,
         right_drawer_content: Optional[Callable[[], None]] = None,
         header_elevated: bool = True,
+        nav_items: Optional[list[tuple[str, str, str]]] = None,
         primary_color: str = "#22c55e",
         secondary_color: str = "#166534",
         accent_color: str = "#bef264",
@@ -43,12 +99,31 @@ class PageLayout:
         dark_color: str = "#1d1d1d",
         dark_page_color: str = "#121212",
     ):
-        """Initialize the page layout."""
+        """Initialize the page layout.
+
+        Args:
+            header_content: Callable to render header content.
+            footer_content: Callable to render footer content.
+            left_drawer_content: Callable that receives the layout instance.
+            right_drawer_content: Callable to render right drawer content.
+            header_elevated: Whether the header has elevation shadow.
+            nav_items: List of (label, path, icon) tuples for navigation.
+            primary_color: Primary theme color.
+            secondary_color: Secondary theme color.
+            accent_color: Accent theme color.
+            positive_color: Positive/success color.
+            negative_color: Negative/error color.
+            info_color: Info color.
+            warning_color: Warning color.
+            dark_color: Dark theme color.
+            dark_page_color: Dark page background color.
+        """
         self.header_content = header_content
         self.footer_content = footer_content
         self.left_drawer_content = left_drawer_content
         self.right_drawer_content = right_drawer_content
         self.header_elevated = header_elevated
+        self.nav_items = nav_items or ThemeManager.DEFAULT_NAV_ITEMS
         self.primary_color = primary_color
         self.secondary_color = secondary_color
         self.accent_color = accent_color
@@ -61,9 +136,9 @@ class PageLayout:
 
         self.left_drawer: Optional[ui.left_drawer] = None
         self.right_drawer: Optional[ui.right_drawer] = None
+        self.theme_manager: Optional[ThemeManager] = None
 
-    @staticmethod
-    def _nav_item(icon: str, label: str, path: str) -> None:
+    def _nav_item(self, icon: str, label: str, path: str) -> None:
         """Render a single navigation item."""
         with ui.link(target=path).classes("w-full no-underline"):
             with ui.row(align_items="center").classes(
@@ -75,35 +150,42 @@ class PageLayout:
                 ui.icon(icon).classes("text-gray-600 dark:text-gray-400 group-hover:text-primary").props("size=sm")
                 ui.label(label).classes("text-gray-700 dark:text-gray-300 font-medium group-hover:text-primary")
 
-    @staticmethod
-    def render_navigation() -> None:
+    def render_navigation(self) -> None:
         """Render navigation menu in left drawer."""
-        nav_items = [
-            ("Home", "/", "home"),
-            ("Drawers", "/drawers-only", "menu"),
-        ]
-
         ui.label("Navigation").classes("text-lg font-bold mb-4")
-
         ui.separator()
 
-        for label, path, icon in nav_items:
-            PageLayout._nav_item(icon, label, path)
+        for label, path, icon in self.nav_items:
+            self._nav_item(icon, label, path)
 
-        # Dark mode toggle at bottom
+        # Dark mode toggle
         with ui.column().classes("mt-auto w-full"):
             ui.separator().classes("my-2")
-            dark_mode_value = app.storage.user.get("dark_mode", True)
-            dark = ui.dark_mode(value=dark_mode_value)
 
-            def save_dark_mode(e):
-                app.storage.user["dark_mode"] = e.value
+            dark_mode_elem = self.theme_manager.setup_dark_mode()
+
+            def on_change(e):
+                dark_mode_elem.value = e.value
+                ThemeManager.set_dark_mode(e.value)
+                self.theme_manager._notify_callbacks(e.value)
 
             with ui.row().classes("items-center gap-3 px-3 py-2 w-full"):
-                ui.switch("Dark mode", value=dark.value).bind_value(dark).on_value_change(save_dark_mode)
+                ui.switch(
+                    "Dark mode",
+                    value=ThemeManager.get_dark_mode(),
+                    on_change=on_change,
+                )
+
+    def on_dark_mode_change(self, callback: Callable[[bool], None]) -> None:
+        """Register callback for dark mode changes."""
+        if self.theme_manager:
+            self.theme_manager.on_dark_mode_change(callback)
 
     def _setup_layout(self) -> None:
         """Set up the page layout components."""
+        # Initialize theme manager for this client
+        self.theme_manager = ThemeManager()
+
         ui.colors(
             primary=self.primary_color,
             secondary=self.secondary_color,
@@ -123,7 +205,7 @@ class PageLayout:
             )
             with self.left_drawer:
                 with ui.column().classes("flex flex-col h-full gap-1 w-full pt-4"):
-                    self.left_drawer_content()
+                    self.left_drawer_content(self)
 
         if self.right_drawer_content:
             self.right_drawer = ui.right_drawer(value=None, top_corner=True, bottom_corner=True).props(
