@@ -4,7 +4,7 @@ import json
 import random
 
 import plotly.graph_objects as go
-from nicegui import ui
+from nicegui import app, ui
 
 from components import PageLayout
 from utils import PlotlyTheme
@@ -29,14 +29,25 @@ def _plotly_page(layout: PageLayout):
     sales_data = [random.randint(20, 100) for _ in range(12)]
     max_sales = max(sales_data) + 10
 
+    def _get_selected_indices() -> list[int]:
+        return list(app.storage.client.get("plotly_selected_indices", []))
+
+    def _set_selected_indices(indices: list[int]) -> None:
+        # Keep it small, stable, and JSON-serializable
+        app.storage.client["plotly_selected_indices"] = sorted(set(int(i) for i in indices))
+
     def create_source_figure() -> go.Figure:
         """Create the source scatter chart."""
+        trace = theme.create_scatter(
+            x=MONTHS,
+            y=sales_data,
+            name="Monthly Sales",
+        )
+        selected_indices = _get_selected_indices()
+        if selected_indices:
+            trace.selectedpoints = selected_indices
         return theme.create_figure(
-            trace=theme.create_scatter(
-                x=MONTHS,
-                y=sales_data,
-                name="Monthly Sales",
-            ),
+            trace=trace,
             title=SOURCE_CHART_TITLE,
             xaxis_title="Month",
             yaxis_title="Sales",
@@ -69,11 +80,14 @@ def _plotly_page(layout: PageLayout):
             if points:
                 x_values = [p.get("x") for p in points]
                 y_values = [p.get("y") for p in points]
+                selected_indices = [i for i, month in enumerate(MONTHS) if month in set(x_values)]
+                _set_selected_indices(selected_indices)
                 update_bar_chart(x_values, y_values)
                 ui.notify(f"Updated chart with {len(points)} selected point(s)")
                 return
 
         # Clear chart if no valid selection
+        _set_selected_indices([])
         update_bar_chart([], [])
 
     def handle_click(event):
@@ -84,13 +98,15 @@ def _plotly_page(layout: PageLayout):
                 point = points[0]
                 x_value = point.get("x")
                 y_value = point.get("y")
+                if x_value in MONTHS:
+                    _set_selected_indices([MONTHS.index(x_value)])
                 update_bar_chart([x_value], [y_value])
                 ui.notify(f"Selected: {x_value} - Sales: {y_value}")
 
     # Theme change handler
     def update_chart_themes(_=None):
         """Update both charts with current theme."""
-        plot1.update_figure(create_source_figure())
+        source_chart.refresh()
         # Preserve existing bar chart data
         current_fig = plot2.figure
         if current_fig and len(current_fig.data) > 0:
@@ -101,12 +117,16 @@ def _plotly_page(layout: PageLayout):
         else:
             update_bar_chart([], [])
 
+    @ui.refreshable
+    def source_chart() -> None:
+        plot1 = ui.plotly(create_source_figure()).classes("w-full")
+        plot1.on("plotly_selected", handle_selection)
+        plot1.on("plotly_click", handle_click)
+
     # Page content
     with ui.grid(columns=2):
         with ui.column().classes("p-6 gap-4"):
-            plot1 = ui.plotly(create_source_figure()).classes("w-full")
-            plot1.on("plotly_selected", handle_selection)
-            plot1.on("plotly_click", handle_click)
+            source_chart()
 
         with ui.column().classes("p-6 gap-4"):
             plot2 = ui.plotly(create_target_figure([], [])).classes("w-full")
