@@ -64,11 +64,12 @@ def _aggrid_page(layout: PageLayout):
     # Convert month to datetime
     df["month"] = pd.to_datetime(df["month"])
 
-    ui.notify(df.to_string(), close_button=True, type="ongoing")
-
-    print(df.dtypes)
+    df["example_site"] = (
+        '<a href="https://google.com" target="_blank" rel="noopener noreferrer" class="inline-block px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition-colors no-underline">Go to Google</a>'
+    )
 
     options = create_options_for_aggrid_from_df(df, filters=True, theme="balham", row_selection_mode="multiple")
-    print(options)
 
-    aggrid = ui.aggrid.from_pandas(df, theme="balham", options=options).classes("h-150")
+    aggrid = ui.aggrid.from_pandas(df, theme="balham", options=options, html_columns=[len(df.columns) - 1]).classes(
+        "h-[70dvh]"
+    )
