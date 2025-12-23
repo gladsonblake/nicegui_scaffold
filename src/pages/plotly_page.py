@@ -1,18 +1,19 @@
 """Plotly page demonstrating chart interaction with theme support."""
 
-import json
-import random
-
-import plotly.graph_objects as go
-from nicegui import app, ui
+import pandas as pd
+from nicegui import ui
 
 from components import PageLayout
-from utils import PlotlyTheme
+from utils import PlotlyEventHandler, PlotlyTheme
+from utils.plotly_dataframe import apply_theme_to_figure, dataframe_to_plotly
+from utils.plotly_events import PlotlyClickEvent, PlotlySelectEvent
 
-# Constants for chart configuration
-MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-SOURCE_CHART_TITLE = "Source Chart - Select points to update the chart below"
-TARGET_CHART_TITLE = "Target Chart - Updated from selection above"
+# Chart titles
+MAIN_CHART_TITLE = "Monthly Trends - Click or select a month"
+DERIVATIVE_CHART_TITLE = "Month Metrics"
+
+# Metrics to display in derivative chart
+METRICS = ["sales", "revenue", "profit", "visitors"]
 
 
 @PageLayout(
@@ -21,112 +22,114 @@ TARGET_CHART_TITLE = "Target Chart - Updated from selection above"
 )
 def _plotly_page(layout: PageLayout):
     """Plotly page demonstrating chart interaction."""
+    # Load CSV data once
+    df = pd.read_csv("data/sample_data.csv")
+
     # Initialize theme helper
     theme = PlotlyTheme.from_layout(layout)
 
-    # Generate reproducible fake data
-    random.seed(42)
-    sales_data = [random.randint(20, 100) for _ in range(12)]
-
-    def _get_selected_indices() -> list[int]:
-        return list(app.storage.client.get("plotly_selected_indices", []))
-
-    def _set_selected_indices(indices: list[int]) -> None:
-        # Keep it small, stable, and JSON-serializable
-        app.storage.client["plotly_selected_indices"] = sorted(set(int(i) for i in indices))
-
-    def create_source_figure() -> go.Figure:
-        """Create the source scatter chart."""
-        trace = theme.create_scatter(
-            x=MONTHS,
-            y=sales_data,
-            name="Monthly Sales",
+    def create_main_figure() -> dict:
+        """Create the main trends chart from CSV data."""
+        fig = dataframe_to_plotly(
+            df,
+            x_column="month",
+            y_columns=["sales", "revenue"],
+            chart_type="scatter",
         )
-        selected_indices = _get_selected_indices()
-        if selected_indices:
-            trace.selectedpoints = selected_indices
-        return theme.create_figure(
-            trace=trace,
-            title=SOURCE_CHART_TITLE,
+        return apply_theme_to_figure(
+            fig,
+            theme,
+            title=MAIN_CHART_TITLE,
             xaxis_title="Month",
-            yaxis_title="Sales",
-            dragmode="select",
+            yaxis_title="Value",
         )
 
-    def create_target_figure(x: list, y: list) -> go.Figure:
-        """Create the target bar chart with given data."""
-        return theme.create_figure(
-            trace=theme.create_bar(x=x, y=y, name="Selected Sales"),
-            title=TARGET_CHART_TITLE,
-            xaxis_title="Month",
-            yaxis_title="Sales",
+    def create_derivative_figure(month: str | None = None) -> dict:
+        """Create derivative chart showing all metrics for a selected month."""
+        if month is None:
+            # Empty chart when no selection
+            return apply_theme_to_figure(
+                {"data": [], "layout": {}},
+                theme,
+                title=DERIVATIVE_CHART_TITLE,
+                xaxis_title="Metric",
+                yaxis_title="Value",
+            )
+
+        # Get data for the selected month
+        row = df[df["month"] == month]
+        if row.empty:
+            return create_derivative_figure(None)
+
+        row_data = row.iloc[0]
+        values = [row_data[metric] for metric in METRICS]
+
+        fig = dataframe_to_plotly(
+            pd.DataFrame({"metric": METRICS, "value": values}),
+            x_column="metric",
+            y_columns="value",
+            chart_type="bar",
+        )
+        return apply_theme_to_figure(
+            fig,
+            theme,
+            title=f"{month} Metrics",
+            xaxis_title="Metric",
+            yaxis_title="Value",
         )
 
-    def update_bar_chart(x_values: list, y_values: list) -> None:
-        """Update the bar chart with new data."""
-        plot2.update_figure(create_target_figure(x_values, y_values))
+    def update_derivative_chart(month: str | None) -> None:
+        """Update the derivative chart with data for the given month."""
+        derivative_plot.update_figure(create_derivative_figure(month))
 
-    # Event handlers
-    def handle_selection(event):
-        """Update the bar chart based on selected points."""
-        if event.args:
-            event_str = json.dumps(event.args, indent=2)
-            ui.run_javascript(f"console.log({event_str})")
+    def handle_click(event: PlotlyClickEvent) -> None:
+        """Handle click on main chart - show metrics for clicked month."""
+        point = event.first_point
+        if point and point.x in df["month"].values:
+            update_derivative_chart(point.x)
+            ui.notify(f"Showing metrics for {point.x}")
 
-        if event.args and "points" in event.args:
-            points = event.args["points"]
-            if points:
-                x_values = [p.get("x") for p in points]
-                y_values = [p.get("y") for p in points]
-                selected_indices = [i for i, month in enumerate(MONTHS) if month in set(x_values)]
-                _set_selected_indices(selected_indices)
-                update_bar_chart(x_values, y_values)
-                ui.notify(f"Updated chart with {len(points)} selected point(s)")
-                return
+    def handle_select(event: PlotlySelectEvent) -> None:
+        """Handle selection on main chart - show metrics for first selected month."""
+        if event.is_empty:
+            update_derivative_chart(None)
+            return
 
-        # Clear chart if no valid selection
-        _set_selected_indices([])
-        update_bar_chart([], [])
-
-    def handle_click(event):
-        """Update the bar chart based on a single clicked point."""
-        if event.args and "points" in event.args:
-            points = event.args["points"]
-            if points:
-                point = points[0]
-                x_value = point.get("x")
-                y_value = point.get("y")
-                if x_value in MONTHS:
-                    _set_selected_indices([MONTHS.index(x_value)])
-                update_bar_chart([x_value], [y_value])
-                ui.notify(f"Selected: {x_value} - Sales: {y_value}")
-
-    # Theme change handler
-    def update_chart_themes(_=None):
-        """Update both charts with current theme."""
-        source_chart.refresh()
-        # Preserve existing bar chart data
-        current_fig = plot2.figure
-        if current_fig and len(current_fig.data) > 0:
-            trace = current_fig.data[0]
-            x_data = list(trace.x) if trace.x is not None else []
-            y_data = list(trace.y) if trace.y is not None else []
-            update_bar_chart(x_data, y_data)
-        else:
-            update_bar_chart([], [])
+        # Use the first selected point
+        first_month = event.x_values[0] if event.x_values else None
+        if first_month and first_month in df["month"].values:
+            update_derivative_chart(first_month)
+            ui.notify(f"Selected {event.point_count} point(s) - showing {first_month}")
 
     @ui.refreshable
-    def source_chart() -> None:
-        plot1 = ui.plotly(create_source_figure())
-        plot1.on("plotly_selected", handle_selection)
-        plot1.on("plotly_click", handle_click)
+    def main_chart() -> None:
+        """Render the main trends chart."""
+        plot = ui.plotly(create_main_figure())
+        handler = PlotlyEventHandler(plot)
+        handler.on_click(handle_click).on_select(handle_select)
 
-    # Page content
-    with ui.grid(columns=2):
-        with ui.column():
-            source_chart()
+    def update_chart_themes(_=None) -> None:
+        """Update charts when theme changes."""
+        main_chart.refresh()
+        # Preserve current derivative chart state by re-applying theme
+        current_fig = derivative_plot.figure
+        if current_fig and current_fig.get("layout", {}).get("title"):
+            title = current_fig["layout"]["title"]
+            # Extract month from title if it exists (format: "MonthName Metrics")
+            if title != DERIVATIVE_CHART_TITLE and title.endswith(" Metrics"):
+                month = title.replace(" Metrics", "")
+                update_derivative_chart(month)
+            else:
+                update_derivative_chart(None)
+        else:
+            update_derivative_chart(None)
 
-        with ui.column():
-            plot2 = ui.plotly(create_target_figure([], []))
+    # Page content - two charts side by side
+    with ui.grid(columns=2).classes("w-full gap-4"):
+        with ui.column().classes("w-full"):
+            main_chart()
 
-            layout.on_dark_mode_change(update_chart_themes)
+        with ui.column().classes("w-full"):
+            derivative_plot = ui.plotly(create_derivative_figure(None))
+
+    layout.on_dark_mode_change(update_chart_themes)
