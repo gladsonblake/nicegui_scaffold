@@ -97,15 +97,15 @@ def _plotly_page(layout: PageLayout):
 
         filtered_df = event.filter_dataframe_on_x(df, "month")
         ui.notify(filtered_df.to_string())
-        ui.aggrid.from_pandas(
-            filtered_df,
-            theme="balham",
-            options={
-                "columnDefs": [
-                    {"field": "month", "headerName": "Month", "filter": "agTextColumnFilter", "floatingFilter": True}
-                ]
-            },
-        ).classes("max-h-40")
+        # ui.aggrid.from_pandas(
+        #     filtered_df,
+        #     theme="balham",
+        #     options={
+        #         "columnDefs": [
+        #             {"field": "month", "headerName": "Month", "filter": "agTextColumnFilter", "floatingFilter": True}
+        #         ]
+        #     },
+        # ).classes("max-h-40")
         if event.is_empty:
             update_derivative_chart(None)
             return

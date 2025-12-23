@@ -15,7 +15,11 @@ def get_filter_type(dtype):
 
 
 def create_options_for_aggrid_from_df(
-    df: pd.DataFrame, filters: bool = True, theme: str = "balham", row_selection_mode: str | None = None
+    df: pd.DataFrame,
+    editable: bool = False,
+    filters: bool = True,
+    theme: str = "balham",
+    row_selection_mode: str | None = None,
 ) -> dict:
     """From a dataframe, returns the columnDefs and rowSelection objects for aggrid options.
 
@@ -24,6 +28,7 @@ def create_options_for_aggrid_from_df(
 
     Args:
         df: The pandas DataFrame to generate column definitions from
+        editable: Whether to enable editing on columns (default: False)
         filters: Whether to enable filters on columns (default: True)
         theme: AG Grid theme (not used in options, passed separately to from_pandas)
         row_selection_mode: Row selection mode ('single', 'multiple', or None)
@@ -40,6 +45,7 @@ def create_options_for_aggrid_from_df(
         column_def = {
             "field": str(column),
             "headerName": str(column).title(),
+            "editable": editable,
         }
         # Add filter if enabled
         if filters:
@@ -68,8 +74,12 @@ def _aggrid_page(layout: PageLayout):
         '<a href="https://google.com" target="_blank" rel="noopener noreferrer" class="inline-block px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium rounded transition-colors no-underline">Go to Google</a>'
     )
 
-    options = create_options_for_aggrid_from_df(df, filters=True, theme="balham", row_selection_mode="multiple")
+    options = create_options_for_aggrid_from_df(
+        df, editable=True, filters=True, theme="balham", row_selection_mode="multiple"
+    )
 
     aggrid = ui.aggrid.from_pandas(df, theme="balham", options=options, html_columns=[len(df.columns) - 1]).classes(
         "h-[70dvh]"
     )
+
+    print(aggrid)
