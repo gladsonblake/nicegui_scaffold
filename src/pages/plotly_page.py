@@ -85,15 +85,33 @@ def _plotly_page(layout: PageLayout):
     def handle_click(event: PlotlyClickEvent) -> None:
         """Handle click on main chart - show metrics for clicked month."""
         point = event.first_point
+        filtered_df = event.filter_dataframe_on_x(df, "month")
+        ui.notify(filtered_df.to_string())
+        ui.notify(event.y_values)
         if point and point.x in df["month"].values:
             update_derivative_chart(point.x)
             ui.notify(f"Showing metrics for {point.x}")
 
     def handle_select(event: PlotlySelectEvent) -> None:
         """Handle selection on main chart - show metrics for first selected month."""
+
+        filtered_df = event.filter_dataframe_on_x(df, "month")
+        ui.notify(filtered_df.to_string())
+        ui.aggrid.from_pandas(
+            filtered_df,
+            theme="balham",
+            options={
+                "columnDefs": [
+                    {"field": "month", "headerName": "Month", "filter": "agTextColumnFilter", "floatingFilter": True}
+                ]
+            },
+        ).classes("max-h-40")
         if event.is_empty:
             update_derivative_chart(None)
             return
+
+        filtered_df = event.filter_dataframe(df, "month", ["sales", "revenue"])
+        ui.notify(filtered_df.to_string())
 
         # Use the first selected point
         first_month = event.x_values[0] if event.x_values else None

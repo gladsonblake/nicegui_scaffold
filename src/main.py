@@ -5,6 +5,7 @@ Demonstrates the PageLayout component with various configuration options.
 
 from nicegui import ui
 
+from pages.aggrid_page import _aggrid_page
 from pages.drawer_page import drawers_page
 from pages.home_page import home
 from pages.plotly_page import _plotly_page
@@ -23,6 +24,11 @@ def drawers_only_page():
 @ui.page("/plotly")
 def plotly_page():
     _plotly_page()
+
+
+@ui.page("/aggrid")
+def aggrid_page():
+    _aggrid_page()
 
 
 if __name__ in {"__main__", "__mp_main__"}:

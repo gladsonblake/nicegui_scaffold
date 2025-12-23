@@ -8,6 +8,7 @@ in derivative charts and tables.
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
+import pandas as pd
 from nicegui.elements.plotly import Plotly
 
 
@@ -104,6 +105,35 @@ class PlotlyClickEvent:
         points = [PlotlyPoint.from_dict(p) for p in args["points"]]
         return cls(points=points)
 
+    def filter_dataframe(
+        self,
+        df: pd.DataFrame,
+        x_column: str,
+        y_columns: list[str] | None = None,
+    ) -> pd.DataFrame:
+        """Filter dataframe based on clicked x and optional y columns."""
+        if not self.points:
+            return df.iloc[0:0].copy()
+
+        mask_x = df[x_column].isin(self.x_values)
+
+        if not y_columns:
+            return df[mask_x].copy()
+
+        # Build a 1D boolean mask over all specified y columns
+        mask_y = df[y_columns[0]].isin(self.y_values)
+        for col in y_columns[1:]:
+            mask_y |= df[col].isin(self.y_values)
+
+        mask = mask_x & mask_y
+        return df[mask].copy()
+
+    def filter_dataframe_on_x(self, df: pd.DataFrame, x_column: str) -> pd.DataFrame:
+        """Filter dataframe based on clicked x values."""
+        if not self.points:
+            return df.iloc[0:0].copy()  # empty df with same columns
+        return df[df[x_column].isin(self.x_values)].copy()
+
 
 @dataclass
 class PlotlyHoverEvent:
@@ -145,6 +175,12 @@ class PlotlyHoverEvent:
 
         points = [PlotlyPoint.from_dict(p) for p in args["points"]]
         return cls(points=points)
+
+    def filter_dataframe_on_x(self, df: pd.DataFrame, x_column: str) -> pd.DataFrame:
+        """Filter dataframe based on clicked x values."""
+        if not self.points:
+            return df.iloc[0:0].copy()  # empty df with same columns
+        return df[df[x_column].isin(self.x_values)].copy()
 
 
 @dataclass
@@ -203,6 +239,12 @@ class PlotlySelectEvent:
             range=args.get("range"),
             lassoPoints=args.get("lassoPoints"),
         )
+
+    def filter_dataframe_on_x(self, df: pd.DataFrame, x_column: str) -> pd.DataFrame:
+        """Filter dataframe based on clicked x values."""
+        if not self.points:
+            return df.iloc[0:0].copy()  # empty df with same columns
+        return df[df[x_column].isin(self.x_values)].copy()
 
 
 @dataclass
