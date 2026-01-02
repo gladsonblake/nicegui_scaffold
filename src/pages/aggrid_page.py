@@ -92,7 +92,7 @@ def _aggrid_page(layout: PageLayout):
     async def update_plot():
         """Update the plot with filtered data from AG Grid."""
         filtered_df = await get_filtered_dataframe(aggrid)
-        plot = ui.plotly(
+        ui.plotly(
             apply_theme_to_figure(
                 dataframe_to_plotly(filtered_df, x_column="month", y_columns=["sales", "revenue"]),
                 theme=PlotlyTheme.from_layout(layout),

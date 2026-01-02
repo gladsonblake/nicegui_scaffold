@@ -632,6 +632,7 @@ name = "nicegui-scaffold"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "httpx" },
     { name = "nicegui" },
     { name = "pandas" },
     { name = "plotly" },
@@ -639,6 +640,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "nicegui", specifier = ">=3.4.1" },
     { name = "pandas", specifier = ">=2.3.3" },
     { name = "plotly", specifier = ">=6.5.0" },

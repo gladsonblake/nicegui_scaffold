@@ -8,6 +8,7 @@ from nicegui import ui
 from pages.aggrid_page import _aggrid_page
 from pages.drawer_page import drawers_page
 from pages.home_page import home
+from pages.live_chart_page import _live_chart_page
 from pages.plotly_page import _plotly_page
 
 
@@ -29,6 +30,11 @@ def plotly_page():
 @ui.page("/aggrid")
 def aggrid_page():
     _aggrid_page()
+
+
+@ui.page("/live")
+def live_chart_page():
+    _live_chart_page()
 
 
 if __name__ in {"__main__", "__mp_main__"}:

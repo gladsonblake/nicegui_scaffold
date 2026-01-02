@@ -21,6 +21,7 @@ class ThemeManager:
         ("Home", "/", "home"),
         ("Drawers", "/drawers-only", "menu"),
         ("Plotly", "/plotly", "bar_chart"),
+        ("Live Chart", "/live", "show_chart"),
         ("AgGrid", "/aggrid", "grid_on"),
     ]
 
